@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define ASCII_LOWERCASE_LOWER_BOUND 97
 #define ASCII_LOWERCASE_UPPER_BOUND 122
@@ -35,12 +36,30 @@ bool ispangram(char *s) {
   return true;
 }
 
+#define BS_MASK 0x3FFFFFF
+
+bool is_pangram_fast(char *s) {
+    unsigned int bs = 0;
+
+    char c;
+    while ((c = *s) != '\0') {
+        if (isalpha(c)) {
+            char lower = c | ASCII_UPPERCASE_TO_LOWERCASE_MASK;
+            bs |= 1 << (lower - 'a');
+        }
+
+        s++;
+    }
+
+    return bs == BS_MASK;
+}
+
 int main() {
   size_t len;
   ssize_t read;
   char *line = NULL;
   while ((read = getline(&line, &len, stdin)) != -1) {
-    if (ispangram(line))
+    if (is_pangram_fast(line))
       printf("%s", line);
   }
 
