@@ -18,4 +18,7 @@ if __name__ == "__main__":
     query += struct.pack('!cHH', b'\x00', 1, 1)
 
     s.sendto(query, ('8.8.8.8', 53))
+
+    resp_bytes, sender = s.recvfrom(4093)
+    print(resp_bytes)
     print("OK")
