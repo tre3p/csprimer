@@ -19,17 +19,17 @@ if __name__ == "__main__":
             upstream_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             upstream_socket.connect(UPSTREAM_ADDR)
             upstream_socket.send(client_bytes)
-            print(f'{UPSTREAM_ADDR} <- *: {len(client_bytes)}B')
+            print(f'* -> {UPSTREAM_ADDR}: {len(client_bytes)}B')
 
             while True:
                 upstream_bytes = upstream_socket.recv(1050)
-                print(f'{UPSTREAM_ADDR} -> *: {len(upstream_bytes)} bytes')
+                print(f'* <- {UPSTREAM_ADDR}: {len(upstream_bytes)} bytes')
 
                 if len(upstream_bytes) == 0:
                     break
 
-                print(f'{client_addr} <- *: {len(upstream_bytes)} bytes')
                 client_socket.send(upstream_bytes)
+                print(f'{client_addr} <- *: {len(upstream_bytes)} bytes')
         except KeyboardInterrupt:
             print("Interrupting..")
             exit(0)
