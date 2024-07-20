@@ -31,51 +31,59 @@ func main() {
 
 func handleProxyConnection(clientConn net.Conn) {
 	fmt.Println("New connection accepted")
-	upstreamConn, err := net.Dial("tcp", upstreamAddr)
-	if err != nil {
-		if errors.Is(err, syscall.ECONNREFUSED) {
-			clientConn.Write([]byte("HTTP/1.1 502\r\n\r\n"))
-			clientConn.Close()
-			return
-		}
-	}
 
 	for {
-		buf := make([]byte, bufSize)
-		readBytes, err := clientConn.Read(buf)
+		upstreamConn, err := net.Dial("tcp", upstreamAddr)
 
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				upstreamConn.Close()
+			if errors.Is(err, syscall.ECONNREFUSED) {
+				clientConn.Write([]byte("HTTP/1.1 502\r\n\r\n"))
 				clientConn.Close()
 				return
+			}
+		}
+
+		clientBuf := make([]byte, bufSize)
+		readBytes, err := clientConn.Read(clientBuf)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				fmt.Println("EOF on client")
+				break
 			} else {
 				panic(err)
 			}
 		}
-
 		fmt.Printf("%s -> *: %dB\n", clientConn.LocalAddr().String(), readBytes)
 
-		wroteBytes, err := upstreamConn.Write(buf[0:readBytes])
+		wroteBytes, err := upstreamConn.Write(clientBuf[0:readBytes])
 		if err != nil {
 			panic(err)
 		}
+
 		fmt.Printf("* -> %s: %dB\n", upstreamConn.RemoteAddr().String(), wroteBytes)
 
 		for {
 			upstreamBuf := make([]byte, bufSize)
-			readBytes, err := upstreamConn.Read(upstreamBuf)
+			upstreamReadBytes, err := upstreamConn.Read(upstreamBuf)
 			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break // Listen for requests from client / jump to outer loop
+				if errors.Is(err, io.EOF) { // All data from upstream socket is read, continue
+					fmt.Println("EOF on upstream")
+					fmt.Printf("len of upstream buf: %d\n", len(upstreamBuf))
+					break
+				} else {
+					panic(err)
 				}
 			}
+			fmt.Printf("* <- %s: %dB\n", upstreamConn.RemoteAddr().String(), upstreamReadBytes)
 
-			wroteBytes, err := clientConn.Write(upstreamBuf[0:readBytes])
+			upstreamWroteBytes, err := clientConn.Write(upstreamBuf[0:upstreamReadBytes])
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("%s <- *: %dB\n", clientConn.RemoteAddr().String(), wroteBytes)
+			fmt.Printf("%s <- *: %dB\n", clientConn.RemoteAddr().String(), upstreamWroteBytes)
 		}
 	}
+
+	fmt.Println("Closing connection")
+	clientConn.Close()
 }
