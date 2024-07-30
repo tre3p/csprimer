@@ -37,7 +37,7 @@ int child(void *arg) {
 
 int main(int argc, char**argv) {
   struct child_config config = {0};
-  int flags = 0;
+  int flags = CLONE_NEWNET | CLONE_NEWPID;
   pid_t child_pid = 0;
 
   // Prepare child configuration
@@ -53,7 +53,7 @@ int main(int argc, char**argv) {
 
   // Clone parent, enter child code
   if ((child_pid = clone(child, stack + STACK_SIZE, flags | SIGCHLD, &config)) == -1) {
-    fprintf(stderr, "Clone failed");
+    perror("Clone failed");
     exit(2);
   }
 
