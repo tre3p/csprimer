@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #define STACK_SIZE 65536
-#define CONTAINER_HOME "/home/container"
+#define CONTAINER_HOME "container"
 
 struct child_config {
   int argc;
@@ -22,7 +22,10 @@ int child(void *arg) {
     return -1;
   }
 
-  chdir(CONTAINER_HOME);
+  if (chdir(CONTAINER_HOME) != 0) {
+    perror("chdir");
+    return - 1;
+  }
 
   if (execvp(config->argv[0], config->argv)) {
     fprintf(stderr, "execvpe failed %m.\n");
